@@ -1,6 +1,5 @@
 package com.example.sudoku.service;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,6 +18,49 @@ public class SudokuService {
 	List<Integer> numberList = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9);
 	List<Integer> orderedNumberList = Collections.unmodifiableList(List.of(1, 2, 3, 4, 5, 6, 7, 8, 9));
 	int counter = 0;
+	
+	public int[][] createFullSudoku() {
+		int[][] grid = initGrid();
+		fillGrid(grid);
+		if(!checkFullSudoku(grid)){
+			throw new IllegalStateException("Generation of Sudoku failed. Try again");
+		}
+		return grid;
+	}
+	
+	@SneakyThrows
+	public int[][] createSudokuRiddle(int[][] fullSudoku, int attempts) {
+		//1. Remove value randomly and backup
+		//2. Check if other value can be put into field
+		//3. If yes, try to solve Sudoku without stepping back
+		Random random = new Random();
+		while (attempts > 0) {
+			int row = random.nextInt(9);
+			int col = random.nextInt(9);
+			int[][] clonedSudoku = cloneGrid(fullSudoku);
+			if (clonedSudoku[row][col] != 0) {
+				int backup = clonedSudoku[row][col];
+				clonedSudoku[row][col] = 0;
+				boolean foundValue = false;
+				for (int value:orderedNumberList) {
+					if (value!=backup && valueIsPossible(clonedSudoku, value, row, col)) {
+						clonedSudoku[row][col] = value;
+						if (hasSolutionForFixedStartConfig(clonedSudoku)) {
+							//More than one solution was found
+							attempts--;
+							foundValue=true;
+							break;
+						}
+					}
+				}
+				if(!foundValue) {
+					fullSudoku[row][col] = 0;
+				}
+			}
+		}
+			
+		return fullSudoku;
+	}
 	
 	public void fillGrid(int[][] grid) {
 
@@ -60,48 +102,6 @@ public class SudokuService {
 			}
 			
 		}
-		log.info("Found Sudoku");
-	}
-	
-	@SneakyThrows
-	public int[][] createSudokuRiddle(int[][] fullSudoku) {
-		//1. Remove value randomly and backup
-		//2. Check if other value can be put into field
-		//3. If yes, try to solve Sudoku without stepping back
-		Random random = new Random();
-		int attempts = 2;
-		while (attempts > 0) {
-			Thread.sleep(500L);
-			log.info("Riddle has {} zeroes", countOccurrencesOfValueInGrid(fullSudoku, 0));
-			printArray(fullSudoku);
-			int row = random.nextInt(9);
-			int col = random.nextInt(9);
-			int[][] clonedSudoku = cloneGrid(fullSudoku);
-			if (clonedSudoku[row][col] != 0) {
-				int backup = clonedSudoku[row][col];
-				clonedSudoku[row][col] = 0;
-				boolean foundValue = false;
-				for (int value:orderedNumberList) {
-					if (value!=backup && valueIsPossible(clonedSudoku, value, row, col)) {
-						log.info("Value {} is possible at row {} and col {}", value, row, col);
-						clonedSudoku[row][col] = value;
-						if (hasSolution(clonedSudoku)) {
-							//More than one solution was found
-							log.info("Has more than one solution. Cannot set value at row {} and col {} to 0.", row, col);
-							attempts--;
-							foundValue=true;
-							break;
-						}
-					}
-				}
-				if(!foundValue) {
-					log.info("Solution is still unique. Setting value at row {} and col {} to 0.", row, col);
-					fullSudoku[row][col] = 0;
-				}
-			}
-		}
-			
-		return fullSudoku;
 	}
 	
 
@@ -119,33 +119,70 @@ public class SudokuService {
 		return result;
 	}
 	
-	private boolean hasSolution(int[][] grid) {
-		int i=0;
-		while (i<81) {
-			int row = Math.floorDiv(i, 9);
-			int col = i % 9;
+	
+	public boolean hasSolutionForFixedStartConfig(int[][] grid) {
+		List<Integer> zeroIndexes = findZeroIndexes(grid);
+		if (zeroIndexes.size()==0) {
+			return checkFullSudoku(grid);
+		}
+		
+		int firstZeroIndex = zeroIndexes.get(0);
+		
+		int firstZeroIndexRow = Math.floorDiv(firstZeroIndex, 9);
+		int firstZeroIndexCol = firstZeroIndex % 9;
+		
+		for (int firstZeroIndexValue:orderedNumberList) {
 			
-			if (grid[row][col] == 0) {
-				for (int value:orderedNumberList) {
-					if (!rowContainsValue(grid, row, value) && !columnContainsValue(grid, col, value) && !squareContainsValue(grid, row, col, value)) {
-						grid[row][col] = value;
-						if (!squareContainsValue(grid, 0)) {
-							return true;
+			if (!rowContainsValue(grid, firstZeroIndexRow, firstZeroIndexValue) && !columnContainsValue(grid, firstZeroIndexCol, firstZeroIndexValue) && !squareContainsValue(grid, firstZeroIndexRow, firstZeroIndexCol, firstZeroIndexValue)) {
+				
+				grid[firstZeroIndexRow][firstZeroIndexCol] = firstZeroIndexValue;
+				
+				int i=1,k=0;
+				while (i<zeroIndexes.size()) {
+					int row = Math.floorDiv(zeroIndexes.get(i), 9);
+					int col = zeroIndexes.get(i) % 9;
+					
+					boolean foundValue = false;
+					
+					if (grid[row][col] == 0) {
+
+						for (int j=k; j<orderedNumberList.size(); j++) {
+							int value = orderedNumberList.get(j);
+							if (!rowContainsValue(grid, row, value) && !columnContainsValue(grid, col, value) && !squareContainsValue(grid, row, col, value)) {
+								grid[row][col] = value;
+								i++;
+								k=0;
+								foundValue = true;
+								break;
+							}
+							else {
+								foundValue = false;
+							}
 						}
-						else {
-							i++;
-							break;
+						
+						if (!foundValue) {
+							i--;
+							k = orderedNumberList.indexOf(getValueAtPosition(grid, zeroIndexes.get(i)))+1;
+							resetValue(grid, zeroIndexes.get(i));
 						}
 					}
+					else {
+						i++;
+					}
+					
+					if (i==0) {
+						i=zeroIndexes.size();
+					}
+
 				}
-				if (grid[row][col] == 0) {
-					return false;
+				
+				if (checkFullSudoku(grid)) {
+					return true;
 				}
 			}
-			else {
-				i++;
-			}
+			
 		}
+		
 		return false;
 	}
 
@@ -158,30 +195,30 @@ public class SudokuService {
 
 	public boolean checkFullSudoku(int[][] grid) {
 		if (grid.length!=9) {
-			log.info("Number of columns is not equal to 9");
+			log.debug("Number of columns is not equal to 9");
 			return false;
 		}
 		for (int i=0;i<grid.length; i++) {
 			if (grid[i].length !=9) {
-				log.info("Row {} has length not equal to 9", i);
+				log.debug("Row {} has length not equal to 9", i);
 				return false;
 			}
 			for (int value:numberList) {
 				if (!rowContainsValue(grid, i, value)) {
-					log.info("Row {} does not contain value {}", i, value);
+					log.debug("Row {} does not contain value {}", i, value);
 					return false;
 				}
 			}
 			for (int value: numberList) {
 				if (!columnContainsValue(grid, i, value)) {
-					log.info("Column {} does not contain value {}", i, value);
+					log.debug("Column {} does not contain value {}", i, value);
 				}
 			}
 			for (int j=0;j<9; j++) {
 				int[][] square = getSquare(i, j, grid);
 				for (int value: numberList) {
 					if (!squareContainsValue(square, value)) {
-						log.info("Square for row {} and column {} does not contain value {}", i, j, value);
+						log.debug("Square for row {} and column {} does not contain value {}", i, j, value);
 						return false;
 					}
 				}
@@ -219,7 +256,7 @@ public class SudokuService {
 		return false;
 	}
 	
-	private int countOccurrencesOfValueInGrid(int[][] grid, int value) {
+	public int countOccurrencesOfValueInGrid(int[][] grid, int value) {
 		int counter = 0;
 		for (int i=0; i<grid.length; i++) {
 			for (int j=0; j< grid[i].length; j++) {
