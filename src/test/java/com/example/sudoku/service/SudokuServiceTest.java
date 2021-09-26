@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 public class SudokuServiceTest {
 	
 	@Autowired
-	private SudokuService sudokuService;
+	private SudokuGeneratorService sudokuService;
 	
 	@Test
 	public void testFullSudokuRiddleGeneration() {

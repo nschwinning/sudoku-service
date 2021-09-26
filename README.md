@@ -12,11 +12,17 @@ The two most important methods are:
 
 Look at test **testFullSudokuRiddleGeneration** to see the whole process.
 
+### MongoDB
+
+- Installation: https://docs.mongodb.com/manual/installation/
+- https://docs.spring.io/spring-data/mongodb/docs/current/reference/html/#reference
+
+### PDF Files
+
+- https://www.tutorialspoint.com/pdfbox
+- https://github.com/vandeseer/easytable How to render tables with pdfbox
+
 ### Next
 
-- Run Scheduler to generate full Sudoku grids and store them in MongoDB
-- Run Scheduler to generate Sudoku riddles and store them in MongoDB with 
-foreign key of full Sudoku and number of blank fields 
-- Create HTTP endpoint to retrieve random Sudoku riddle 
 - Improve Sudoku algorithm, e.g. generate symmetric riddles, stop only 
 when a certain number of blank fields was retrieved
