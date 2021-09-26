@@ -18,12 +18,22 @@ public class PdfServiceTest {
 	private SudokuGeneratorService sudokuService;
 	
 	@Test
-	public void testGeneratePdf() throws Exception {
+	public void testGeneratePdfBlueColored() throws Exception {
 		int[][] grid = sudokuService.createFullSudoku();
 		int[][] riddle = sudokuService.createSudokuRiddle(grid, 20);
 
 		
 		pdfService.createPdf(riddle, PADDING, BLUE_LIGHT_1, BLUE_LIGHT_2, Color.WHITE, BLUE_DARK);
+		
+	}
+	
+	@Test
+	public void testGeneratePdfClassicalColors() throws Exception {
+		int[][] grid = sudokuService.createFullSudoku();
+		int[][] riddle = sudokuService.createSudokuRiddle(grid, 20);
+
+		
+		pdfService.createPdf(riddle, PADDING, Color.WHITE, Color.WHITE, Color.GRAY, Color.BLACK);
 		
 	}
 
