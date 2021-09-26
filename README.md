@@ -12,6 +12,14 @@ The two most important methods are:
 
 Look at test **testFullSudokuRiddleGeneration** to see the whole process.
 
+---
+
+PdfService provides a method to generate a PDF file with a Sudoku riddle.
+
+Execute test **testGeneratePdf** in PdfServiceTest to retrieve a PDF file. 
+You can find the file in your project's folder with the name doc.pdf
+
+
 ### MongoDB
 
 - Installation: https://docs.mongodb.com/manual/installation/
